@@ -1,6 +1,6 @@
-# Eternal Love - May-Tec Experience ❤️
+# Love - May-Tec - Maicol Mendoza❤️
 
-**Eternal Love** es una experiencia web interactiva que combina música, animaciones visuales y letras tipo karaoke. Ideal para presentaciones románticas y creativas.
+**Love** es una experiencia web interactiva que combina música, animaciones visuales y letras tipo karaoke. Ideal para presentaciones románticas y creativas.
 
 ---
 
