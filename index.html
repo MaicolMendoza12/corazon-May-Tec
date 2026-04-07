@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Eternal Love - May-Tec Experience</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --neon-red: #ff0033;
+    --gold: #ffd700;
+}
+body, html {
+    margin:0; padding:0;
+    width:100%; height:100%;
+    background:#000;
+    overflow:hidden;
+    font-family: 'Montserrat', sans-serif;
+}
+canvas {
+    display:block;
+    position:fixed;
+    top:0; left:0;
+    z-index:1;
+}
+#ui-layer {
+    position:relative;
+    z-index:10;
+    width:100%; height:100%;
+    pointer-events:none;
+}
+.lyric {
+    position:absolute;
+    width:100%;
+    text-align:center;
+    font-size:2rem;
+    font-weight:700;
+    color:white;
+    text-shadow:0 0 20px var(--neon-red),0 0 10px rgba(0,0,0,1);
+    transform: translateY(0);
+}
+#btn-start {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    pointer-events:auto;
+    background: rgba(0,0,0,0.8);
+    border:2px solid var(--neon-red);
+    color:white;
+    padding:18px 35px;
+    font-size:1.2rem;
+    border-radius:50px;
+    cursor:pointer;
+    transition:0.4s;
+    text-transform:uppercase;
+    letter-spacing:2px;
+    box-shadow:0 0 15px var(--neon-red);
+    z-index:20;
+}
+#btn-start:hover {
+    background: var(--neon-red);
+    transform: translate(-50%,-50%) scale(1.1);
+    box-shadow:0 0 40px var(--neon-red);
+}
+footer {
+    position:fixed;
+    bottom:20px;
+    right:30px;
+    z-index:25;
+    color: rgba(255,255,255,0.6);
+    font-family:'Courier New', monospace;
+    letter-spacing:4px;
+    font-size:0.8rem;
+    text-shadow:0 0 8px var(--neon-red);
+}
+</style>
+</head>
+<body>
+
+<canvas id="loveCanvas"></canvas>
+
+<div id="ui-layer">
+    <button id="btn-start">Nuestra Historia Comienza Aquí ❤️</button>
+</div>
+
+<footer>MAY-TEC</footer>
+
+<audio id="musica" src="cancion.mp3" loop></audio>
+
+<script>
+const canvas = document.getElementById('loveCanvas');
+const ctx = canvas.getContext('2d');
+const audio = document.getElementById('musica');
+const btn = document.getElementById('btn-start');
+const uiLayer = document.getElementById('ui-layer');
+
+let width, height;
+let hearts = [], stars = [], photos = [];
+let isStarted = false;
+
+// Letras de la canción
+const myLyrics = [
+    { t: 2, m: "Si, tal vez, pudieras comprender" },
+    { t: 6, m: "Que no sé como expresarme bien" },
+    { t: 10, m: "Si, tal vez, pudiera hacerte ver" },
+    { t: 14, m: "Que no hay otra mujer mejor que tu para mí" },
+    { t: 18, m: "Si, tal vez, me harías muy feliz" },
+    { t: 22, m: "Si, tal vez, me lo podrías decir" },
+    { t: 26, m: "Si, tal vez, detalle a detalle" },
+    { t: 30, m: "Podrías conquistarme sería tuya" },
+    { t: 34, m: "Te quiero tanto, tanto, tanto, tanto, tanto" },
+    { t: 38, m: "Cada día un poco más, ah ah" },
+    { t: 42, m: "Te quiero tanto, tanto, tanto, tanto, tanto" },
+    { t: 46, m: "Para mí no hay nadie igual, no lo hay" },
+    { t: 50, m: "Te quiero tanto, tanto, tanto, tanto amor" }
+];
+
+// Imágenes flotantes
+const imgPaths = ['foto1.jpg','foto2.jpg','foto3.jpg']; 
+const loadedImgs = imgPaths.map(src => { const img = new Image(); img.src = src; return img; });
+
+// Redimensionar canvas
+function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Clase Estrella
+class Star {
+    constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.size = Math.random() * 2;
+        this.blink = 0.05 + Math.random()*0.1;
+        this.opacity = Math.random();
+    }
+    draw() {
+        this.opacity += this.blink;
+        if(this.opacity>1 || this.opacity<0) this.blink*=-1;
+        ctx.fillStyle = `rgba(255,255,255,${this.opacity})`;
+        ctx.fillRect(this.x,this.y,this.size,this.size);
+    }
+}
+
+// Clase Corazón
+class Heart {
+    constructor(isMain=false) {
+        this.isMain = isMain;
+        this.init();
+    }
+    init() {
+        this.x = Math.random()*width;
+        this.y = height + Math.random()*500;
+        this.size = this.isMain ? Math.random()*20+15 : Math.random()*4+2;
+        this.speed = Math.random()*1.5+0.5;
+        this.angle = Math.random()*Math.PI*2;
+        this.opacity = Math.random()*0.7+0.3;
+    }
+    draw() {
+        this.y -= this.speed;
+        this.angle += 0.01;
+        let xOffset = Math.sin(this.angle)*10;
+        ctx.save();
+        ctx.translate(this.x + xOffset, this.y);
+        ctx.beginPath();
+        for(let i=0;i<Math.PI*2;i+=0.1){
+            let r = this.size;
+            let dx = 16*Math.pow(Math.sin(i),3);
+            let dy = -(13*Math.cos(i)-5*Math.cos(2*i)-2*Math.cos(3*i)-Math.cos(4*i));
+            ctx.lineTo(dx*(r/15),dy*(r/15));
+        }
+        ctx.fillStyle = `rgba(255, ${this.isMain?'0,51':'182,193'}, ${this.opacity})`;
+        if(this.isMain){ ctx.shadowBlur=12; ctx.shadowColor="red";}
+        ctx.fill();
+        ctx.restore();
+        if(this.y<-50) this.init();
+    }
+}
+
+// Clase Foto Flotante
+class Photo {
+    constructor(img){
+        this.img = img;
+        this.reset();
+    }
+    reset(){
+        this.x = Math.random()*(width-200)+100;
+        this.y = height + 200 + Math.random()*300;
+        this.size = 120 + Math.random()*80;
+        this.speed = 0.7 + Math.random()*1.2;
+        this.angle = (Math.random()-0.5)*0.2;
+        this.opacity = 0;
+    }
+    draw(){
+        this.y -= this.speed;
+        if(this.opacity<1) this.opacity+=0.01;
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.translate(this.x,this.y);
+        ctx.rotate(this.angle);
+        ctx.fillStyle="white";
+        ctx.fillRect(-this.size/2-8,-this.size/2-8,this.size+16,this.size+32);
+        try{ctx.drawImage(this.img,-this.size/2,-this.size/2,this.size,this.size);}catch(e){}
+        ctx.restore();
+        if(this.y<-300) this.reset();
+    }
+}
+
+// Inicializar elementos
+for(let i=0;i<800;i++) stars.push(new Star());
+for(let i=0;i<400;i++) hearts.push(new Heart(i%10===0));
+loadedImgs.forEach(img=>{for(let j=0;j<3;j++) photos.push(new Photo(img));});
+
+// Array de letras activas
+let activeLyrics = [];
+
+// Mostrar letras (scrolling)
+function updateLyrics(){
+    if(!isStarted) return;
+    let curr = audio.currentTime;
+    
+    // Después de 13 segundos
+    if(curr < 13) return;
+    
+    // Ver si alguna letra debe activarse
+    myLyrics.forEach(l => {
+        if(!l.added && curr-13 >= l.t){
+            l.added = true;
+            const div = document.createElement('div');
+            div.className = 'lyric';
+            div.innerText = l.m;
+            div.style.bottom = '-50px'; // empieza desde abajo
+            uiLayer.appendChild(div);
+            activeLyrics.push({el: div, y: -50});
+        }
+    });
+
+    // Actualizar posición de cada letra
+    activeLyrics.forEach((ly, i)=>{
+        ly.y += 0.5; // velocidad de subida
+        ly.el.style.bottom = ly.y + 'px';
+        if(ly.y > height){ // si llega arriba, remover
+            ly.el.remove();
+            activeLyrics.splice(i,1);
+        }
+    });
+}
+
+// Animación principal
+function animate(){
+    ctx.fillStyle='rgba(0,0,0,0.2)';
+    ctx.fillRect(0,0,width,height);
+    stars.forEach(s=>s.draw());
+    if(isStarted){
+        photos.forEach(p=>p.draw());
+        hearts.forEach(h=>h.draw());
+        updateLyrics();
+    }
+    requestAnimationFrame(animate);
+}
+
+btn.addEventListener('click',()=>{
+    audio.play();
+    isStarted=true;
+    btn.style.display='none';
+});
+
+animate();
+</script>
+</body>
+</html>
