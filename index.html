@@ -27,22 +27,42 @@ canvas {
     z-index:10;
     width:100%; height:100%;
     pointer-events:none;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
 }
-.lyric {
-    position:absolute;
-    width:100%;
-    text-align:center;
-    font-size:2rem;
-    font-weight:700;
-    color:white;
-    text-shadow:0 0 20px var(--neon-red),0 0 10px rgba(0,0,0,1);
-    transform: translateY(0);
+
+/* --- NUEVO ESTILO PARA LAS LÍNEAS QUE SUBEN CONTINUAMENTE --- */
+.lyric-line {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    color: var(--gold);
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-shadow: 
+        -2px -2px 0 #000,  
+         2px -2px 0 #000,
+        -2px  2px 0 #000,
+         2px  2px 0 #000,
+         0 0 15px rgba(0,0,0,1);
+    
+    /* Inician fuera de la pantalla (abajo) y usan una animación CSS */
+    top: 100%;
+    opacity: 0;
+    animation: floatUpContinuous 16s linear forwards; /* 16 segundos subiendo lento y romántico */
 }
+
+/* Animación: Aparece desde abajo, sube constantemente y se desvanece al llegar arriba */
+@keyframes floatUpContinuous {
+    0%   { top: 100%; opacity: 0; }
+    5%   { opacity: 1; } /* Aparece rápido al entrar desde abajo */
+    85%  { opacity: 1; } /* Se mantiene visible casi todo el camino */
+    100% { top: 0%; opacity: 0; } /* Se desvanece y desaparece justo en el borde superior */
+}
+
 #btn-start {
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
     pointer-events:auto;
     background: rgba(0,0,0,0.8);
     border:2px solid var(--neon-red);
@@ -59,7 +79,7 @@ canvas {
 }
 #btn-start:hover {
     background: var(--neon-red);
-    transform: translate(-50%,-50%) scale(1.1);
+    transform: scale(1.1);
     box-shadow:0 0 40px var(--neon-red);
 }
 footer {
@@ -81,7 +101,7 @@ footer {
 
 <div id="ui-layer">
     <button id="btn-start">Nuestra Historia Comienza Aquí ❤️</button>
-</div>
+    </div>
 
 <footer>MAY-TEC</footer>
 
@@ -91,35 +111,50 @@ footer {
 const canvas = document.getElementById('loveCanvas');
 const ctx = canvas.getContext('2d');
 const audio = document.getElementById('musica');
-const btn = document.getElementById('btn-start');
 const uiLayer = document.getElementById('ui-layer');
+const btn = document.getElementById('btn-start');
 
 let width, height;
 let hearts = [], stars = [], photos = [];
 let isStarted = false;
 
-// Letras de la canción
+// Letras ordenadas
 const myLyrics = [
-    { t: 2, m: "Si, tal vez, pudieras comprender" },
-    { t: 6, m: "Que no sé como expresarme bien" },
-    { t: 10, m: "Si, tal vez, pudiera hacerte ver" },
-    { t: 14, m: "Que no hay otra mujer mejor que tu para mí" },
-    { t: 18, m: "Si, tal vez, me harías muy feliz" },
-    { t: 22, m: "Si, tal vez, me lo podrías decir" },
-    { t: 26, m: "Si, tal vez, detalle a detalle" },
-    { t: 30, m: "Podrías conquistarme sería tuya" },
-    { t: 34, m: "Te quiero tanto, tanto, tanto, tanto, tanto" },
-    { t: 38, m: "Cada día un poco más, ah ah" },
-    { t: 42, m: "Te quiero tanto, tanto, tanto, tanto, tanto" },
-    { t: 46, m: "Para mí no hay nadie igual, no lo hay" },
-    { t: 50, m: "Te quiero tanto, tanto, tanto, tanto amor" }
+    { t: 13, m: "Si, tal vez, pudieras comprender" },
+    { t: 17, m: "Que no sé como expresarme bien" },
+    { t: 21, m: "Si, tal vez, pudiera hacerte ver" },
+    { t: 25, m: "Que no hay otra mujer mejor que tu para mí" },
+    { t: 29, m: "Si, tal vez, me harías muy feliz" },
+    { t: 33, m: "Si, tal vez, me lo podrías decir" },
+    { t: 37, m: "Si, tal vez, detalle a detalle" },
+    { t: 41, m: "Podrías conquistarme sería tuya" },
+    { t: 45, m: "Te quiero tanto, tanto, tanto, tanto, tanto" },
+    { t: 49, m: "Cada día un poco más, ah ah" },
+    { t: 53, m: "Te quiero tanto, tanto, tanto, tanto, tanto" },
+    { t: 57, m: "Para mí no hay nadie igual, no lo hay" },
+    { t: 61, m: "Te quiero tanto, tanto, tanto, tanto amor" },
+    { t: 65, m: "Que ya no puedo más" },
+    { t: 69, m: "Que ya no puedo más" },
+    { t: 73, m: "Pues, tal vez, el mundo aprenderá" },
+    { t: 77, m: "Con nuestro amor, lo bello que es amar" },
+    { t: 81, m: "Y tal vez, lo vuelva a repetir" },
+    { t: 85, m: "Pareja por pareja, el mundo entero al fin" },
+    { t: 89, m: "Te quiero tanto, tanto, tanto, tanto, tanto" },
+    { t: 93, m: "Cada día un poco más, ah ah" },
+    { t: 97, m: "Te quiero tanto, tanto, tanto, tanto, tanto" },
+    { t: 101, m: "Para mí no hay nadie igual, no lo hay" },
+    { t: 105, m: "Te quiero tanto, tanto, tanto, tanto amor" },
+    { t: 109, m: "Que ya no puedo más" },
+    { t: 113, m: "Que ya no puedo más" },
+    { t: 117, m: "Que ya no puedo más" },
+    { t: 121, m: "Que ya no puedo más" }
 ];
 
-// Imágenes flotantes
+let currentLyricIndex = 0; // Índice para llevar el control de qué frase toca
+
 const imgPaths = ['foto1.jpg','foto2.jpg','foto3.jpg']; 
 const loadedImgs = imgPaths.map(src => { const img = new Image(); img.src = src; return img; });
 
-// Redimensionar canvas
 function resize() {
     width = canvas.width = window.innerWidth;
     height = canvas.height = window.innerHeight;
@@ -127,7 +162,6 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// Clase Estrella
 class Star {
     constructor() {
         this.x = Math.random() * width;
@@ -144,7 +178,6 @@ class Star {
     }
 }
 
-// Clase Corazón
 class Heart {
     constructor(isMain=false) {
         this.isMain = isMain;
@@ -179,7 +212,6 @@ class Heart {
     }
 }
 
-// Clase Foto Flotante
 class Photo {
     constructor(img){
         this.img = img;
@@ -208,56 +240,48 @@ class Photo {
     }
 }
 
-// Inicializar elementos
 for(let i=0;i<800;i++) stars.push(new Star());
 for(let i=0;i<400;i++) hearts.push(new Heart(i%10===0));
 loadedImgs.forEach(img=>{for(let j=0;j<3;j++) photos.push(new Photo(img));});
 
-// Array de letras activas
-let activeLyrics = [];
+// --- NUEVO SISTEMA DE LETRAS ---
+// Genera elementos HTML que flotan hacia arriba
+function spawnLyric(text) {
+    const el = document.createElement('div');
+    el.className = 'lyric-line';
+    el.innerText = text;
+    uiLayer.appendChild(el);
 
-// Mostrar letras (scrolling)
-function updateLyrics(){
-    if(!isStarted) return;
-    let curr = audio.currentTime;
-    
-    // Después de 13 segundos
-    if(curr < 13) return;
-    
-    // Ver si alguna letra debe activarse
-    myLyrics.forEach(l => {
-        if(!l.added && curr-13 >= l.t){
-            l.added = true;
-            const div = document.createElement('div');
-            div.className = 'lyric';
-            div.innerText = l.m;
-            div.style.bottom = '-50px'; // empieza desde abajo
-            uiLayer.appendChild(div);
-            activeLyrics.push({el: div, y: -50});
+    // Limpia el elemento después de 16 segundos (lo que dura su animación) para no saturar la memoria
+    setTimeout(() => {
+        if (el.parentNode) {
+            el.parentNode.removeChild(el);
         }
-    });
-
-    // Actualizar posición de cada letra
-    activeLyrics.forEach((ly, i)=>{
-        ly.y += 0.5; // velocidad de subida
-        ly.el.style.bottom = ly.y + 'px';
-        if(ly.y > height){ // si llega arriba, remover
-            ly.el.remove();
-            activeLyrics.splice(i,1);
-        }
-    });
+    }, 16000); 
 }
 
-// Animación principal
+function checkLyrics() {
+    if (!isStarted) return;
+    let curr = audio.currentTime;
+    
+    // Si todavía quedan frases por mostrar y llegamos al segundo de la siguiente frase
+    if (currentLyricIndex < myLyrics.length && curr >= myLyrics[currentLyricIndex].t) {
+        spawnLyric(myLyrics[currentLyricIndex].m);
+        currentLyricIndex++; // Avanzamos a la siguiente frase
+    }
+}
+
 function animate(){
     ctx.fillStyle='rgba(0,0,0,0.2)';
     ctx.fillRect(0,0,width,height);
     stars.forEach(s=>s.draw());
+    
     if(isStarted){
         photos.forEach(p=>p.draw());
         hearts.forEach(h=>h.draw());
-        updateLyrics();
+        checkLyrics(); // Verificamos si toca disparar una nueva frase
     }
+    
     requestAnimationFrame(animate);
 }
 
